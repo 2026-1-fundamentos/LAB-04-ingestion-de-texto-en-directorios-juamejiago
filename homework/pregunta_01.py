@@ -5,6 +5,28 @@
 Escriba el codigo que ejecute la accion solicitada en cada pregunta.
 """
 
+from pathlib import Path
+import zipfile
+
+import pandas as pd  # type: ignore
+
+
+def _build_dataset(split_dir: Path) -> pd.DataFrame:
+    rows = []
+
+    for sentiment_dir in sorted(path for path in split_dir.iterdir() if path.is_dir()):
+        target = sentiment_dir.name
+
+        for text_file in sorted(sentiment_dir.glob("*.txt")):
+            rows.append(
+                {
+                    "phrase": text_file.read_text(encoding="utf-8").strip(),
+                    "target": target,
+                }
+            )
+
+    return pd.DataFrame(rows, columns=["phrase", "target"])
+
 
 def pregunta_01():
     """
@@ -71,3 +93,19 @@ def pregunta_01():
 
 
     """
+
+    zip_path = Path("files/input.zip")
+    input_dir = Path("input")
+    output_dir = Path("files/output")
+
+    if not input_dir.exists():
+        with zipfile.ZipFile(zip_path) as archive:
+            archive.extractall(".")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    train_dataset = _build_dataset(input_dir / "train")
+    test_dataset = _build_dataset(input_dir / "test")
+
+    train_dataset.to_csv(output_dir / "train_dataset.csv", index=False)
+    test_dataset.to_csv(output_dir / "test_dataset.csv", index=False)
